@@ -2,86 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MADI Studios – Animated Music Background</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MADI Studios – Animated Music Background</title>
   <style>
-    html, body { margin:0; padding:0; width:100vw; height:100vh; overflow:hidden; background:#191827; }
-    #canvas { position:fixed; left:0; top:0; width:100vw; height:100vh; z-index:-1;}
-    #cover {
-      position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:2;
-      background:#282a2bde; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    html, body {
+      margin: 0; padding: 0; overflow: hidden; width: 100vw; height: 100vh; background: #191827;
     }
-    #cover h1 { color: #FFC800; font-size:2.3em; margin-bottom:0.5em;}
-    #cover p { color: #FFEFB3; font-size:1.3em;}
+    #canvas { position: fixed; left: 0; top: 0; z-index: -1; }
+    #cover {
+      width: 100vw; height: 100vh; position: fixed; top: 0; left: 0;
+      display: flex; flex-direction:column; align-items:center; justify-content:center; z-index:2;
+      background: #191827ea;
+    }
+    #cover h1 { color: #FFC800; font-size:2.4em; }
+    #cover p { color: #FFEFB3; font-size: 1.3em; margin-top:0.6em; }
   </style>
 </head>
 <body>
 <canvas id="canvas"></canvas>
 <div id="cover">
   <h1>MADI Studios</h1>
-  <p>Click anywhere to enter and enjoy the music...</p>
+  <p>Click anywhere to enter<br>and enjoy the music...</p>
 </div>
 <audio id="audio" loop>
   <source src="https://cdn.pixabay.com/audio/2022/03/08/audio_3588543a00.mp3" type="audio/mp3" />
 </audio>
 <script>
+// Canvas resize
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
-window.addEventListener('resize',resizeCanvas);resizeCanvas();
+function resizeCanvas(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
-class Note{
-  constructor(){this.reset();}
-  reset(){
+// Animated music notes
+class Note {
+  constructor() { this.reset(); }
+  reset() {
     this.x = Math.random() * canvas.width;
-    this.y = canvas.height + Math.random()*180;
-    this.size = 28 + Math.random()*32;
-    this.speed = 0.5 + Math.random()*1.1;
+    this.y = canvas.height + (Math.random() * 180);
+    this.size = 28 + Math.random() * 32;
+    this.speed = 0.6 + Math.random() * 1.1;
     this.char = ["\u266A","\u266B","\u266C","\u2669"][Math.floor(Math.random()*4)];
-    this.alpha = 0.19+Math.random()*0.24;
+    this.alpha = 0.19 + Math.random()*0.24;
     this.color = `rgba(108,199,255,${this.alpha})`;
-    this.phase = Math.random()*8;
+    this.phase = Math.random() * 8;
   }
-  draw(level){
+  draw(level) {
     ctx.save();
     ctx.font = `${this.size+(level*36)}px Arial`;
-    ctx.shadowColor="#31e9ff";
-    ctx.shadowBlur=12+level*24;
-    ctx.fillStyle=this.color;
-    ctx.globalAlpha=this.alpha+level*0.19;
-    ctx.fillText(this.char,this.x,this.y);
+    ctx.shadowColor = "#31e9ff";
+    ctx.shadowBlur = 14 + level*28;
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = this.alpha + level*0.19;
+    ctx.fillText(this.char, this.x, this.y);
     ctx.restore();
   }
-  update(level){
-    this.y -= (this.speed+level*1.7);
-    this.x += Math.sin(this.phase+Date.now()/2800.0)*1.3;
-    if(this.y<-60) this.reset();
+  update(level) {
+    this.y -= (this.speed + level*1.7);
+    this.x += Math.sin(this.phase + Date.now()/2800.0) * 1.3;
+    if(this.y < -60) this.reset();
   }
 }
-let notes=Array.from({length:42},()=>new Note());
+let notes = Array.from({length: 48}, () => new Note());
 
-let audioCtx,analyzer,src,level=0; const audioEl=document.getElementById('audio'); let started=false;
+// Music audio analysis
+let audioCtx, analyzer, src, level = 0;
+const audioEl = document.getElementById('audio');
+let started = false;
 
 function animate(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(analyzer){
-    let arr=new Uint8Array(analyzer.frequencyBinCount);
+    let arr = new Uint8Array(analyzer.frequencyBinCount);
     analyzer.getByteFrequencyData(arr);
-    level=arr.reduce((a,b)=>a+b,0)/arr.length/255;
+    level = arr.reduce((a,b)=>a+b,0)/arr.length/255;
   }
-  notes.forEach(n=>{n.update(level);n.draw(level);});
+  notes.forEach(n=>{ n.update(level); n.draw(level); });
   requestAnimationFrame(animate);
 }
 
-document.getElementById('cover').addEventListener('click',function(){
-  if(started)return;
-  started=true;
-  document.getElementById('cover').style.display="none";
-  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  analyzer=audioCtx.createAnalyser();
-  src=audioCtx.createMediaElementSource(audioEl);
-  src.connect(analyzer);analyzer.connect(audioCtx.destination);
-  analyzer.fftSize=32;
+// Start everything after user click (autoplay rule)
+document.getElementById('cover').addEventListener('click', function(){
+  if(started) return;
+  started = true;
+  document.getElementById('cover').style.display = "none";
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  analyzer = audioCtx.createAnalyser();
+  src = audioCtx.createMediaElementSource(audioEl);
+  src.connect(analyzer);
+  analyzer.connect(audioCtx.destination);
+  analyzer.fftSize = 32;
   audioEl.play();
   animate();
 });
