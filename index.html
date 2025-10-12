@@ -1,176 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MADI Studios - Animated Music Background</title>
-<style>
-  body, html {
-    margin: 0; padding: 0; overflow: hidden; height: 100vh; background: #111;
-    display: flex; flex-direction: column; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #eee;
-  }
-  #canvas {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
-    background: linear-gradient(135deg, #0a0a0a, #111);
-  }
-  .content {
-    margin: auto;
-    max-width: 420px;
-    text-align: center;
-  }
-  h1 { color: #ffca28; }
-  audio { margin-top: 20px; }
-  button {
-    margin-top: 10px; padding: 10px 20px; background: #ffca28; border: none; border-radius: 6px; cursor: pointer;
-    font-weight: bold; color: #222; font-size: 14px;
-    transition: background-color 0.3s ease;
-  }
-  button:hover { background: #ffd850; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MADI Studios – Animated Background</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0; overflow: hidden;
+      width: 100vw; height: 100vh;
+      background: #191827;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #FFDC7C;
+    }
+    #canvas {
+      position: fixed;
+      left: 0; top: 0; width: 100vw; height: 100vh; z-index: -1;
+    }
+    #cover {
+      width: 100vw; height: 100vh;
+      position: fixed; top: 0; left: 0;
+      background: #191827fa;
+      display: flex; flex-direction:column; align-items:center; justify-content:center; z-index:2;
+    }
+    #cover h1 { color: #FFC800; font-size:2.2em; margin-bottom:0.6em; }
+    #cover p { color: #FFEFB3; font-size: 1.3em; }
+  </style>
 </head>
 <body>
-
 <canvas id="canvas"></canvas>
-
-<div class="content">
+<div id="cover">
   <h1>MADI Studios</h1>
-  <p>Welcome! Enjoy the music and animated background reacting to the rhythm.</p>
-  <audio id="audio" controls crossorigin="anonymous" loop>
-    <source src="https://cdn.pixabay.com/download/audio/2022/03/08/audio_3588543a00.mp3?filename=smooth-jazzy-lofi-beats-short-7515.mp3" type="audio/mp3"/>
-    Your browser does not support the audio element.
-  </audio>
-  <br/>
-  <button id="toggleAudioBtn">Pause Music</button>
+  <p>Click anywhere to enter<br>and enjoy the music...</p>
 </div>
-
+<audio id="audio" loop>
+  <source src="https://cdn.pixabay.com/audio/2022/03/08/audio_3588543a00.mp3" type="audio/mp3" />
+</audio>
 <script>
+  // Set up canvas and floating animated notes
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
-  resizeCanvas();
+  function resizeCanvas(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
-  window.addEventListener('resize', resizeCanvas);
-
-  // Particles for music notes
-  class MusicNote {
-    constructor(x, y, size, speedX, speedY, alpha, color) {
-      this.x = x;
-      this.y = y;
-      this.size = size;
-      this.speedX = speedX;
-      this.speedY = speedY;
-      this.alpha = alpha;
-      this.color = color;
+  // Array of floating music notes (unicode)
+  class Note {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = canvas.height + (Math.random() * 200);
+      this.size = 32 + Math.random() * 26;
+      this.speed = 0.4 + Math.random() * 0.8;
+      this.char = ["\u266A","\u266B","\u266C","\u2669"][Math.floor(Math.random()*4)];
+      this.alpha = 0.18 + Math.random()*0.23;
+      this.color = `rgba(176,240,255,${this.alpha})`;
+      this.phase = Math.random() * 10;
     }
-    draw(ctx) {
+    draw(level) {
       ctx.save();
-      ctx.globalAlpha = this.alpha;
+      ctx.font = `${this.size+(level*38)}px Arial`;
+      ctx.shadowColor = "#B6DEFC";
+      ctx.shadowBlur = 9 + level*22;
       ctx.fillStyle = this.color;
-      // Draw a simple musical note shape
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size*0.4, 0, Math.PI*2);
-      ctx.fill();
-      ctx.fillRect(this.x - this.size*0.15, this.y - this.size, this.size * 0.3, this.size * 0.7);
-      ctx.beginPath();
-      ctx.arc(this.x + this.size*0.15, this.y - this.size, this.size*0.25, 0, Math.PI*2);
-      ctx.fill();
+      ctx.globalAlpha = this.alpha + level*0.18;
+      ctx.fillText(this.char, this.x, this.y);
       ctx.restore();
     }
-    update() {
-      this.x += this.speedX;
-      this.y += this.speedY;
-      if (this.x > canvas.width + this.size) this.x = -this.size;
-      if (this.x < -this.size) this.x = canvas.width + this.size;
-      if (this.y > canvas.height + this.size) this.y = -this.size;
-      if (this.y < -this.size) this.y = canvas.height + this.size;
+    update(level) {
+      this.y -= (this.speed + level*1.8);
+      this.x += Math.sin(this.phase + Date.now()/2800.0) * 0.72;
+      if(this.y < -60) this.reset();
     }
   }
+  let notes = Array.from({length: 35}, () => new Note());
 
-  // Create an array of music notes
-  const notes = [];
-  const colorBase = '#ffca28';
-  for (let i = 0; i < 50; i++) {
-    notes.push(new MusicNote(
-      Math.random() * canvas.width,
-      Math.random() * canvas.height,
-      10 + Math.random() * 10,
-      (Math.random()-0.5) * 0.4,
-      (Math.random()-0.5) * 0.4,
-      0.2 + Math.random() * 0.3,
-      colorBase
-    ));
-  }
-
-  // Audio context for music analysis
-  let audioCtx, analyzer, source;
+  // Audio analysis variables
+  let audioCtx, analyzer, src, level = 0;
   const audioEl = document.getElementById('audio');
+  let started = false;
 
-  function initAudioContext() {
-    if (audioCtx) return; // Already initialized
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // Analysis + launch animation
+  function setup() {
+    if (started) return;
+    started = true;
+    document.getElementById('cover').style.display = "none";
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
     analyzer = audioCtx.createAnalyser();
-    source = audioCtx.createMediaElementSource(audioEl);
-    source.connect(analyzer);
+    src = audioCtx.createMediaElementSource(audioEl);
+    src.connect(analyzer);
     analyzer.connect(audioCtx.destination);
-    analyzer.fftSize = 64;
+    analyzer.fftSize = 32;
+    audioEl.play();
+    animate();
   }
-
-  // Animate function
-  function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Analyze audio
-    if (analyzer) {
-      const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-      analyzer.getByteFrequencyData(dataArray);
-      const avg = dataArray.reduce((a,b) => a + b, 0) / dataArray.length;
-      // Change size and alpha of notes based on audio level
-      notes.forEach(note => {
-        let effect = avg / 255;
-        note.alpha = 0.2 + effect * 0.5;
-        note.size = 10 + 10 * effect;
-        note.update();
-        note.draw(ctx);
-      });
-    } else {
-      notes.forEach(note => {
-        note.update();
-        note.draw(ctx);
-      });
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Analyze audio energy
+    if(analyzer){
+      let arr = new Uint8Array(analyzer.frequencyBinCount);
+      analyzer.getByteFrequencyData(arr);
+      level = arr.reduce((a,b)=>a+b,0)/arr.length/255;
     }
-
+    notes.forEach(n=>{ n.update(level); n.draw(level); });
     requestAnimationFrame(animate);
   }
-
-  // Setup and start animation after user interacts or audio plays
-  audioEl.addEventListener('play', () => {
-    if (!audioCtx) {
-      initAudioContext();
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-  });
-
-  // Toggle play/pause button
-  const toggleBtn = document.getElementById('toggleAudioBtn');
-  toggleBtn.addEventListener('click', () => {
-    if (audioEl.paused) {
-      audioEl.play();
-      toggleBtn.textContent = 'Pause Music';
-    } else {
-      audioEl.pause();
-      toggleBtn.textContent = 'Play Music';
-    }
-  });
-
-  // Resize canvas function
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-
-  animate();
+  // Overlay triggers audio context and animation
+  document.getElementById('cover').addEventListener('click', setup);
 </script>
 </body>
 </html>
