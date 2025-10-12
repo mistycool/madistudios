@@ -37,7 +37,7 @@
     </div>
   </main>
 
-  <!-- Hidden audio element (your hosted MP3). Add more sources if you like. -->
+  <!-- Your audio file; keep it same-origin so the visualizer can analyze it -->
   <audio id="audio" preload="auto" src="assets/track.mp3" crossorigin="anonymous"></audio>
 
   <div class="controls">
@@ -54,20 +54,38 @@
   const muteBtn = document.getElementById('muteBtn');
 
   let audioCtx, analyser, data, rafId;
-  let w=0,h=0, dpr=1;
+  let w=0,h=0,dpr=1;
 
+  // --- particles (sparkles) ---
   const particles = [];
-  const MAX = 450; // increase for denser “sparkles”
+  const MAX = 450;
   const TAU = Math.PI*2;
+
+  // --- NEW: floating music notes ♪ / ♫ ---
+  const notes = [];
+  const NOTE_GLYPHS = ["♪","♫"];
+  function spawnNote(x = Math.random() * w){
+    notes.push({
+      x,
+      y: h + 30*dpr,
+      vx: (Math.random() - .5) * 0.6 * dpr,
+      vy: - (1.2 + Math.random() * 1.6) * dpr,
+      rot: Math.random() * TAU,
+      vr: (Math.random() - .5) * 0.01,
+      glyph: NOTE_GLYPHS[(Math.random() * NOTE_GLYPHS.length)|0],
+      life: 260 + Math.random()*160,
+      size: (Math.random()*0.7 + 0.8) * (w/90)
+    });
+  }
 
   function resize(){
     dpr = Math.min(2, window.devicePixelRatio || 1);
     w = canvas.width  = Math.floor(innerWidth  * dpr);
     h = canvas.height = Math.floor(innerHeight * dpr);
     canvas.style.width = innerWidth + 'px';
-    canvas.style.height= innerHeight+ 'px';
+    canvas.style.height= innerHeight + 'px';
   }
-  addEventListener('resize', resize,{passive:true}); resize();
+  addEventListener('resize', resize, {passive:true}); resize();
 
   function seedParticles(){
     particles.length = 0;
@@ -75,7 +93,7 @@
       particles.push({
         x: Math.random()*w,
         y: Math.random()*h,
-        z: Math.random()*1,        // depth factor
+        z: Math.random()*1,
         vx: (Math.random()-.5)*0.25,
         vy: (Math.random()-.5)*0.25,
         life: Math.random()*400+200,
@@ -84,34 +102,31 @@
   }
   seedParticles();
 
-  // Smooth noise helpers
   const lerp = (a,b,t)=>a+(b-a)*t;
   let t = 0;
 
   function drawFrame(){
     rafId = requestAnimationFrame(drawFrame);
 
-    // background glow trail
+    // subtle trail
     ctx.fillStyle = 'rgba(5,8,20,0.18)';
     ctx.fillRect(0,0,w,h);
 
-    // read audio data if available
+    // analyze audio
     let bass=0, mids=0;
     if(analyser){
       analyser.getByteFrequencyData(data);
-      // bass ~ 20–160Hz (bins 0–10 roughly at 44.1k/2048)
       for(let i=0;i<12;i++) bass += data[i]||0;
       bass/= (12*255);
-      // mids ~ 400–2kHz (bins 20–120 approx)
       for(let i=20;i<120;i++) mids += data[i]||0;
       mids/= (100*255);
     } else {
-      // idle animation if no audio yet
+      // idle motion if no audio playing
       bass = 0.12 + 0.08*Math.sin(t*0.5);
       mids = 0.08 + 0.06*Math.cos(t*0.3);
     }
 
-    // wavy “field” lines
+    // wavy field lines
     const rows = 6;
     for(let r=0;r<rows;r++){
       const y = h*(0.25 + r/(rows+2)) + Math.sin(t*0.9 + r)*40*dpr*bass;
@@ -120,13 +135,12 @@
         const y2 = y + Math.sin(x*0.004 + t + r)*18*dpr*mids;
         r? ctx.lineTo(x,y2) : ctx.moveTo(x,y2);
       }
-      const glow = Math.floor(180 + 60*bass*5);
-      ctx.strokeStyle = `rgba(80, ${glow}, 255, ${0.06 + 0.06*bass})`;
+      ctx.strokeStyle = `rgba(80, 210, 255, ${0.06 + 0.06*bass})`;
       ctx.lineWidth = 1.2*dpr;
       ctx.stroke();
     }
 
-    // particles that “spark” on bass
+    // sparkles
     const sparkle = 0.6 + bass*2.2;
     for(const p of particles){
       p.x += p.vx + (Math.sin(t*0.4 + p.y*0.002)-.5)*sparkle;
@@ -148,10 +162,42 @@
       ctx.shadowBlur = 0;
     }
 
+    // --- NEW: spawn & draw music notes (on bass energy) ---
+    if (bass > 0.22 && Math.random() < 0.18) spawnNote();
+
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    // scalable font size based on viewport
+    ctx.font = `${Math.max(16, w/42)}px "Segoe UI Symbol","Apple Color Emoji","Noto Emoji",system-ui,sans-serif`;
+
+    for (let i = notes.length - 1; i >= 0; i--) {
+      const n = notes[i];
+      n.x += n.vx + Math.sin(t*0.8 + n.y*0.002)*0.6*dpr;
+      n.y += n.vy - bass*0.8*dpr;
+      n.rot += n.vr;
+      n.life -= 1;
+
+      const glowAlpha = 0.25 + 0.55 * Math.min(1, bass*2);
+
+      ctx.save();
+      ctx.translate(n.x, n.y);
+      ctx.rotate(n.rot);
+      ctx.shadowBlur = 22*dpr;
+      ctx.shadowColor = `rgba(82,230,255,0.9)`;
+      ctx.fillStyle = `rgba(120,220,255,${glowAlpha})`;
+      ctx.scale(1 + bass*0.4, 1 + bass*0.4);
+      ctx.fillText(n.glyph, 0, 0);
+      ctx.restore();
+
+      if (n.life <= 0 || n.y < -60*dpr) notes.splice(i, 1);
+    }
+    ctx.restore();
+
     t += 0.008 + bass*0.02;
   }
 
-  // Audio bootstrapping
+  // audio bootstrapping
   async function startAudio(){
     try{
       if(!audioCtx){
@@ -166,13 +212,14 @@
         analyser.connect(gain);
         gain.connect(audioCtx.destination);
       }
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
       await audio.play();
       playBtn.textContent = "⏸ Pause";
-      drawFrame();
+      if(!rafId) drawFrame();
     }catch(e){
       console.warn(e);
       playBtn.textContent = "Play (tap to allow audio)";
-      if(!rafId) drawFrame(); // still animate quietly
+      if(!rafId) drawFrame(); // keep idle animation
     }
   }
 
