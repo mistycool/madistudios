@@ -6,11 +6,13 @@
 <title>Madi AI Studios</title>
 <style>
   html,body{height:100%;margin:0;background:#050814;color:#fff;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
-  #stage{position:fixed;inset:0;z-index:-1;background:radial-gradient(1200px 600px at 70% 30%, #0a1a3a 0%, #070d1f 40%, #050814 70%)}
+  /* Canvas stage now ABOVE the body background */
+  #stage{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(1200px 600px at 70% 30%, #0a1a3a 0%, #070d1f 40%, #050814 70%)}
   canvas{display:block;width:100%;height:100%}
   .grain:before{content:"";position:fixed;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.08;background:
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><filter id='n'><feTurbulence baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.35'/></svg>")}
-  .center{position:relative;display:grid;place-items:center;min-height:100dvh;text-align:center;padding:24px}
+  .center{position:relative;z-index:1;display:grid;place-items:center;min-height:100dvh;text-align:center;padding:24px}
   h1{font-weight:700;letter-spacing:.03em;margin:.2em 0}
   p{opacity:.8;margin:.2em 0 1em}
   .cta{display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center}
@@ -18,8 +20,8 @@
     box-shadow:0 0 24px #00c2ff22 inset, 0 0 40px #00d9ff22;backdrop-filter:blur(4px);transition:transform .2s, box-shadow .3s}
   button:hover,.link:hover{transform:translateY(-1px);box-shadow:0 0 30px #00e1ff33 inset, 0 0 60px #00f0ff33}
   .small{font-size:.9rem;opacity:.75}
-  .controls{position:fixed;right:14px;bottom:14px;display:flex;gap:8px}
-  .badge{position:fixed;left:14px;bottom:14px;font-size:.85rem;opacity:.65}
+  .controls{position:fixed;right:14px;bottom:14px;display:flex;gap:8px;z-index:2}
+  .badge{position:fixed;left:14px;bottom:14px;font-size:.85rem;opacity:.65;z-index:2}
 </style>
 </head>
 <body class="grain">
@@ -33,12 +35,12 @@
         <button id="playBtn">▶ Enter & Play Background Music</button>
         <a class="link" href="https://youtube.com/@MadiAIStudios" target="_blank" rel="noopener">Watch on YouTube</a>
       </div>
-      <p class="small">Tip: replace <code>assets/track.mp3</code> with your song for a custom look.</p>
+      <p class="small">Tip: place your MP3 at <code>assets/track.mp3</code> (same repo). The visualizer can’t analyze YouTube audio.</p>
     </div>
   </main>
 
-  <!-- Your audio file; keep it same-origin so the visualizer can analyze it -->
-  <audio id="audio" preload="auto" src="assets/track.mp3" crossorigin="anonymous"></audio>
+  <!-- Keep this path valid in your repo: /madistudios/assets/track.mp3 -->
+  <audio id="audio" preload="auto" src="assets/track.mp3"></audio>
 
   <div class="controls">
     <button id="muteBtn" title="Mute/Unmute">🔇 Mute</button>
@@ -53,33 +55,32 @@
   const playBtn = document.getElementById('playBtn');
   const muteBtn = document.getElementById('muteBtn');
 
-  let audioCtx, analyser, data, rafId;
-  let w=0,h=0,dpr=1;
+  let audioCtx, analyser, data;
+  let w=0,h=0,dpr=1, rafId=null;
 
-  // --- particles (sparkles) ---
+  // sparkles
   const particles = [];
-  const MAX = 450;
+  const MAX = 480;
   const TAU = Math.PI*2;
 
-  // --- NEW: floating music notes ♪ / ♫ ---
+  // floating music notes
   const notes = [];
   const NOTE_GLYPHS = ["♪","♫"];
-  function spawnNote(x = Math.random() * w){
+  function spawnNote(x = Math.random()*w){
     notes.push({
       x,
       y: h + 30*dpr,
-      vx: (Math.random() - .5) * 0.6 * dpr,
-      vy: - (1.2 + Math.random() * 1.6) * dpr,
-      rot: Math.random() * TAU,
-      vr: (Math.random() - .5) * 0.01,
-      glyph: NOTE_GLYPHS[(Math.random() * NOTE_GLYPHS.length)|0],
-      life: 260 + Math.random()*160,
-      size: (Math.random()*0.7 + 0.8) * (w/90)
+      vx: (Math.random()-.5)*0.6*dpr,
+      vy: - (1.2 + Math.random()*1.6) * dpr,
+      rot: Math.random()*TAU,
+      vr: (Math.random()-.5)*0.01,
+      glyph: NOTE_GLYPHS[(Math.random()*NOTE_GLYPHS.length)|0],
+      life: 260 + Math.random()*160
     });
   }
 
   function resize(){
-    dpr = Math.min(2, window.devicePixelRatio || 1);
+    dpr = Math.min(2, devicePixelRatio || 1);
     w = canvas.width  = Math.floor(innerWidth  * dpr);
     h = canvas.height = Math.floor(innerHeight * dpr);
     canvas.style.width = innerWidth + 'px';
@@ -93,7 +94,7 @@
       particles.push({
         x: Math.random()*w,
         y: Math.random()*h,
-        z: Math.random()*1,
+        z: Math.random(),
         vx: (Math.random()-.5)*0.25,
         vy: (Math.random()-.5)*0.25,
         life: Math.random()*400+200,
@@ -102,46 +103,46 @@
   }
   seedParticles();
 
-  const lerp = (a,b,t)=>a+(b-a)*t;
   let t = 0;
+  function draw(){
+    rafId = requestAnimationFrame(draw);
 
-  function drawFrame(){
-    rafId = requestAnimationFrame(drawFrame);
-
-    // subtle trail
-    ctx.fillStyle = 'rgba(5,8,20,0.18)';
+    // trail
+    ctx.fillStyle = 'rgba(5,8,20,0.2)';
     ctx.fillRect(0,0,w,h);
 
-    // analyze audio
+    // audio analysis or demo motion
     let bass=0, mids=0;
-    if(analyser){
+    if (analyser){
       analyser.getByteFrequencyData(data);
-      for(let i=0;i<12;i++) bass += data[i]||0;
-      bass/= (12*255);
-      for(let i=20;i<120;i++) mids += data[i]||0;
+      for(let i=0;i<14;i++) bass += data[i]||0;  // bass bins
+      bass/= (14*255);
+      for(let i=20;i<120;i++) mids += data[i]||0; // mids
       mids/= (100*255);
     } else {
-      // idle motion if no audio playing
-      bass = 0.12 + 0.08*Math.sin(t*0.5);
-      mids = 0.08 + 0.06*Math.cos(t*0.3);
+      // DEMO mode: clearly visible motion (even before clicking Play)
+      bass = 0.25 + 0.18*Math.sin(t*0.9);
+      mids = 0.20 + 0.12*Math.cos(t*0.6);
+      // occasional demo notes
+      if (Math.random() < 0.06) spawnNote();
     }
 
     // wavy field lines
     const rows = 6;
     for(let r=0;r<rows;r++){
-      const y = h*(0.25 + r/(rows+2)) + Math.sin(t*0.9 + r)*40*dpr*bass;
+      const y = h*(0.25 + r/(rows+2)) + Math.sin(t*0.9 + r)*50*dpr*bass;
       ctx.beginPath();
-      for(let x=0;x<w;x+=12*dpr){
-        const y2 = y + Math.sin(x*0.004 + t + r)*18*dpr*mids;
+      for(let x=0;x<w;x+=10*dpr){
+        const y2 = y + Math.sin(x*0.004 + t + r)*22*dpr*mids;
         r? ctx.lineTo(x,y2) : ctx.moveTo(x,y2);
       }
-      ctx.strokeStyle = `rgba(80, 210, 255, ${0.06 + 0.06*bass})`;
-      ctx.lineWidth = 1.2*dpr;
+      ctx.strokeStyle = `rgba(${60+Math.floor(40*bass)}, ${200+Math.floor(40*bass)}, 255, ${0.08 + 0.08*bass})`;
+      ctx.lineWidth = 1.4*dpr;
       ctx.stroke();
     }
 
     // sparkles
-    const sparkle = 0.6 + bass*2.2;
+    const sparkle = 0.7 + bass*2.4;
     for(const p of particles){
       p.x += p.vx + (Math.sin(t*0.4 + p.y*0.002)-.5)*sparkle;
       p.y += p.vy + (Math.cos(t*0.3 + p.x*0.002)-.5)*sparkle;
@@ -151,51 +152,52 @@
       if(p.y<0) p.y+=h; if(p.y>h) p.y-=h;
       if(p.life<0){ p.x=Math.random()*w; p.y=Math.random()*h; p.life=Math.random()*400+200; }
 
-      const size = (0.6 + bass*2.8) * (p.z*2+0.6) * dpr;
-      const a = 0.35 + 0.5*Math.min(1,bass*1.8) * (1 - p.z*0.8);
+      const size = (0.7 + bass*3.0) * (p.z*2+0.6) * dpr;
+      const a = 0.35 + 0.55*Math.min(1,bass*1.8) * (1 - p.z*0.8);
       ctx.beginPath();
       ctx.arc(p.x,p.y,size,0,TAU);
-      ctx.fillStyle = `rgba(82,230,255,${a})`;
-      ctx.shadowBlur = 12*dpr;
+      // some cool gold sparks
+      const warm = Math.random() < 0.12 ? `rgba(255,200,120,${a*0.9})` : `rgba(82,230,255,${a})`;
+      ctx.fillStyle = warm;
+      ctx.shadowBlur = 14*dpr;
       ctx.shadowColor = 'rgba(80,200,255,0.8)';
       ctx.fill();
       ctx.shadowBlur = 0;
     }
 
-    // --- NEW: spawn & draw music notes (on bass energy) ---
+    // music notes (spawn more on bass)
     if (bass > 0.22 && Math.random() < 0.18) spawnNote();
 
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    // scalable font size based on viewport
     ctx.font = `${Math.max(16, w/42)}px "Segoe UI Symbol","Apple Color Emoji","Noto Emoji",system-ui,sans-serif`;
-
     for (let i = notes.length - 1; i >= 0; i--) {
       const n = notes[i];
-      n.x += n.vx + Math.sin(t*0.8 + n.y*0.002)*0.6*dpr;
-      n.y += n.vy - bass*0.8*dpr;
-      n.rot += n.vr;
+      n.x += Math.sin(t*0.8 + n.y*0.002)*0.8*dpr;
+      n.y += - (1.0 + bass*1.6) * dpr;
+      n.rot += (Math.random()-.5)*0.02;
       n.life -= 1;
 
-      const glowAlpha = 0.25 + 0.55 * Math.min(1, bass*2);
-
+      const glowAlpha = 0.28 + 0.6 * Math.min(1, bass*2);
       ctx.save();
       ctx.translate(n.x, n.y);
       ctx.rotate(n.rot);
-      ctx.shadowBlur = 22*dpr;
-      ctx.shadowColor = `rgba(82,230,255,0.9)`;
+      ctx.shadowBlur = 24*dpr;
+      ctx.shadowColor = 'rgba(82,230,255,0.95)';
       ctx.fillStyle = `rgba(120,220,255,${glowAlpha})`;
-      ctx.scale(1 + bass*0.4, 1 + bass*0.4);
       ctx.fillText(n.glyph, 0, 0);
       ctx.restore();
 
-      if (n.life <= 0 || n.y < -60*dpr) notes.splice(i, 1);
+      if (n.life <= 0 || n.y < -80*dpr) notes.splice(i, 1);
     }
     ctx.restore();
 
-    t += 0.008 + bass*0.02;
+    t += 0.01 + bass*0.02;
   }
+
+  // start renderer immediately so you see motion even before clicking Play
+  draw();
 
   // audio bootstrapping
   async function startAudio(){
@@ -215,26 +217,20 @@
       if (audioCtx.state === 'suspended') await audioCtx.resume();
       await audio.play();
       playBtn.textContent = "⏸ Pause";
-      if(!rafId) drawFrame();
     }catch(e){
-      console.warn(e);
       playBtn.textContent = "Play (tap to allow audio)";
-      if(!rafId) drawFrame(); // keep idle animation
     }
   }
 
   playBtn.addEventListener('click', async () => {
-    if(audio.paused){ await startAudio(); }
-    else{ audio.pause(); playBtn.textContent = "▶ Play"; }
+    if (audio.paused) { await startAudio(); }
+    else { audio.pause(); playBtn.textContent = "▶ Play"; }
   });
 
   muteBtn.addEventListener('click', () => {
     audio.muted = !audio.muted;
     muteBtn.textContent = audio.muted ? "🔊 Unmute" : "🔇 Mute";
   });
-
-  // start idle animation immediately
-  drawFrame();
 })();
 </script>
 </body>
