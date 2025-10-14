@@ -1,237 +1,403 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Madi AI Studios</title>
-<style>
-  html,body{height:100%;margin:0;background:#050814;color:#fff;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
-  /* Canvas stage now ABOVE the body background */
-  #stage{position:fixed;inset:0;z-index:0;pointer-events:none;
-    background:radial-gradient(1200px 600px at 70% 30%, #0a1a3a 0%, #070d1f 40%, #050814 70%)}
-  canvas{display:block;width:100%;height:100%}
-  .grain:before{content:"";position:fixed;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.08;background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><filter id='n'><feTurbulence baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.35'/></svg>")}
-  .center{position:relative;z-index:1;display:grid;place-items:center;min-height:100dvh;text-align:center;padding:24px}
-  h1{font-weight:700;letter-spacing:.03em;margin:.2em 0}
-  p{opacity:.8;margin:.2em 0 1em}
-  .cta{display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center}
-  button,.link{cursor:pointer;border:1px solid #3bd6ff33;background:#0c1324;border-radius:999px;padding:12px 18px;color:#dff6ff;
-    box-shadow:0 0 24px #00c2ff22 inset, 0 0 40px #00d9ff22;backdrop-filter:blur(4px);transition:transform .2s, box-shadow .3s}
-  button:hover,.link:hover{transform:translateY(-1px);box-shadow:0 0 30px #00e1ff33 inset, 0 0 60px #00f0ff33}
-  .small{font-size:.9rem;opacity:.75}
-  .controls{position:fixed;right:14px;bottom:14px;display:flex;gap:8px;z-index:2}
-  .badge{position:fixed;left:14px;bottom:14px;font-size:.85rem;opacity:.65;z-index:2}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Madi AI Studios — Cinematic Stories, Music & Worlds</title>
+  <meta name="description" content="Madi AI Studios: Eclipse sci‑fi series, Egyptian queens documentaries, Eva music, and creative shorts. Ultra‑cinematic. Audio‑reactive site.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{
+      --bg-1: #0b0f1a; /* deep space */
+      --bg-2: #101826; /* dusk */
+      --accent: #a7f3d0; /* mint */
+      --accent-2: #60a5fa; /* blue */
+      --accent-3: #f472b6; /* pink */
+    }
+    html, body { height: 100%; }
+    body { font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: radial-gradient(1200px 800px at 70% 10%, #141c2b 0%, #0b0f1a 60%, #05070c 100%); }
+    /* Audio-reactive canvas covers the page */
+    #viz {
+      position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; z-index: -1;
+      background: radial-gradient(1200px 800px at 20% 80%, #0c1220 0%, #09101b 55%, #060913 100%);
+    }
+    /* Soft vignette */
+    .vignette::after{
+      content:""; position: fixed; inset:0; pointer-events:none; z-index:0; 
+      background: radial-gradient(80% 60% at 50% 40%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.0) 55%, rgba(0,0,0,0.35) 100%);
+    }
+    /* Neon glow helper */
+    .neon{ text-shadow: 0 0 12px rgba(96,165,250,.55), 0 0 32px rgba(244,114,182,.35); }
+    .glass{ backdrop-filter: blur(12px); background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.12); }
+    .btn{ transition: transform .15s ease, box-shadow .2s ease; }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 10px 30px rgba(96,165,250,.25); }
+    .floating{ animation: float 8s ease-in-out infinite; }
+    @keyframes float{ 0%,100%{ transform: translateY(0)} 50%{ transform: translateY(-8px)} }
+  </style>
 </head>
-<body class="grain">
-  <div id="stage"><canvas id="viz"></canvas></div>
+<body class="text-slate-200 antialiased selection:bg-blue-500/30 selection:text-white">
+  <canvas id="viz"></canvas>
 
-  <main class="center">
-    <div>
-      <h1>Welcome to <span style="color:#52e6ff;text-shadow:0 0 12px #35c9ff66">Madi AI Studios</span></h1>
-      <p>AI films, ancient Egypt, and cinematic music — with a live, audio-reactive background.</p>
-      <div class="cta">
-        <button id="playBtn">▶ Enter & Play Background Music</button>
-        <a class="link" href="https://youtube.com/@MadiAIStudios" target="_blank" rel="noopener">Watch on YouTube</a>
+  <!-- NAV -->
+  <header class="vignette fixed top-0 left-0 right-0 z-10">
+    <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-400/60 via-pink-400/60 to-emerald-300/60 shadow-lg"></div>
+        <span class="text-lg font-semibold tracking-wide">Madi AI Studios</span>
       </div>
-      <p class="small">Tip: place your MP3 at <code>assets/track.mp3</code> (same repo). The visualizer can’t analyze YouTube audio.</p>
+      <div class="hidden md:flex items-center gap-6 text-sm">
+        <a href="#eclipse" class="hover:text-white/90">Eclipse</a>
+        <a href="#egypt" class="hover:text-white/90">Egyptian Queens</a>
+        <a href="#music" class="hover:text-white/90">Eva Music</a>
+        <a href="#shorts" class="hover:text-white/90">Shorts</a>
+        <a href="#contact" class="hover:text-white/90">Contact</a>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="playBtn" class="btn rounded-xl px-4 py-2 glass text-sm">Play Site Audio</button>
+        <a href="#music" class="btn rounded-xl px-4 py-2 bg-blue-500/80 hover:bg-blue-500 text-white text-sm">Listen</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section class="relative z-0 pt-28 md:pt-36 pb-14">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-2 gap-10 items-center">
+        <div>
+          <h1 class="text-4xl md:text-6xl font-extrabold leading-tight neon">Cinematic Worlds.\nMusic with a Pulse.</h1>
+          <p class="mt-5 text-slate-300/90 text-lg md:text-xl">Original sci‑fi stories, historical epics, and heartbreak ballads—all powered by art, code, and relentless craft. Explore the <span class="text-blue-300">Eclipse</span> universe, journey with the queens of Egypt, and feel the emotion of <span class="text-pink-300">Eva</span>.</p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href="#eclipse" class="btn glass rounded-xl px-4 py-2">Explore Eclipse</a>
+            <a href="#egypt" class="btn glass rounded-xl px-4 py-2">Watch Egyptian Series</a>
+            <a href="#music" class="btn glass rounded-xl px-4 py-2">Stream Eva</a>
+          </div>
+          <div class="mt-6 text-xs text-slate-400">Audio‑reactive background animates with your music.</div>
+        </div>
+        <div class="relative">
+          <div class="glass rounded-2xl p-3 md:p-4 shadow-xl">
+            <!-- Replace this thumbnail with your own promo image/video -->
+            <div class="aspect-video rounded-xl overflow-hidden bg-black/50">
+              <iframe class="w-full h-full" src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0" title="Madi AI Studios Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="px-2 py-3 flex items-center justify-between">
+              <span class="text-sm text-slate-300">Featured: Eva — “Shadows of Your Love”</span>
+              <a href="#music" class="text-sm text-blue-300 hover:text-blue-200">More →</a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </main>
+  </section>
 
-  <!-- Keep this path valid in your repo: /madistudios/assets/track.mp3 -->
-  <audio id="audio" preload="auto" src="assets/track.mp3"></audio>
+  <!-- SECTIONS -->
+  <section id="eclipse" class="relative z-0 py-16">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-bold mb-6">Eclipse — The Sci‑Fi Series</h2>
+      <p class="text-slate-300/90 max-w-3xl">A grounded, cinematic saga about Orion, Arya, and a power that could remake their world. Ultra‑realistic visuals, consistent character locks, and a living universe—updated as new chapters drop.</p>
+      <div class="mt-6 grid md:grid-cols-3 gap-6">
+        <a class="glass rounded-2xl overflow-hidden group" href="#">
+          <div class="aspect-[16/9] bg-[url('https://images.unsplash.com/photo-1517816743773-6e0fd518b4a6?q=80&w=1280&auto=format&fit=crop')] bg-cover bg-center"></div>
+          <div class="p-4 flex items-center justify-between">
+            <span>Episode 1 — Before the Fire</span>
+            <span class="text-xs text-slate-400 group-hover:text-slate-200">Watch</span>
+          </div>
+        </a>
+        <a class="glass rounded-2xl overflow-hidden group" href="#">
+          <div class="aspect-[16/9] bg-[url('https://images.unsplash.com/photo-1517816428104-797678c7cf0d?q=80&w=1280&auto=format&fit=crop')] bg-cover bg-center"></div>
+          <div class="p-4 flex items-center justify-between">
+            <span>Character Gallery</span>
+            <span class="text-xs text-slate-400 group-hover:text-slate-200">See</span>
+          </div>
+        </a>
+        <a class="glass rounded-2xl overflow-hidden group" href="#">
+          <div class="aspect-[16/9] bg-[url('https://images.unsplash.com/photo-1558981359-219d6364c9c8?q=80&w=1280&auto=format&fit=crop')] bg-cover bg-center"></div>
+          <div class="p-4 flex items-center justify-between">
+            <span>Behind the Scenes</span>
+            <span class="text-xs text-slate-400 group-hover:text-slate-200">Read</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
 
-  <div class="controls">
-    <button id="muteBtn" title="Mute/Unmute">🔇 Mute</button>
-  </div>
-  <div class="badge">Background reacts to bass & mids.</div>
+  <section id="egypt" class="relative z-0 py-16">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-bold mb-6">Queens of Egypt — Documentary Series</h2>
+      <p class="text-slate-300/90 max-w-3xl">Sobekneferu, Merneith, Khentkaus I and more—told with archaeological detail and cinematic visuals. Journey through fire‑lit temples, the Nile at dusk, and living history.</p>
+      <div class="mt-6 grid md:grid-cols-3 gap-6">
+        <div class="glass rounded-2xl p-5">
+          <h3 class="font-semibold text-lg">Sobekneferu</h3>
+          <p class="mt-2 text-sm text-slate-300">The first confirmed woman Pharaoh. Watch the episode, see the temples, hear the story.</p>
+          <a class="mt-3 inline-block text-blue-300 hover:text-blue-200 text-sm" href="#">Watch Episode →</a>
+        </div>
+        <div class="glass rounded-2xl p-5">
+          <h3 class="font-semibold text-lg">Merneith</h3>
+          <p class="mt-2 text-sm text-slate-300">A shadowed queen whose tomb stands among kings at Abydos. Evidence meets myth.</p>
+          <a class="mt-3 inline-block text-blue-300 hover:text-blue-200 text-sm" href="#">Watch Episode →</a>
+        </div>
+        <div class="glass rounded-2xl p-5">
+          <h3 class="font-semibold text-lg">Khentkaus I</h3>
+          <p class="mt-2 text-sm text-slate-300">“Mother of Two Kings.” A royal enigma at the height of Old Kingdom power.</p>
+          <a class="mt-3 inline-block text-blue-300 hover:text-blue-200 text-sm" href="#">Watch Episode →</a>
+        </div>
+      </div>
+    </div>
+  </section>
 
-<script>
-(() => {
-  const canvas = document.getElementById('viz');
-  const ctx = canvas.getContext('2d', { alpha: true });
-  const audio = document.getElementById('audio');
-  const playBtn = document.getElementById('playBtn');
-  const muteBtn = document.getElementById('muteBtn');
+  <section id="music" class="relative z-0 py-16">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="md:flex items-end justify-between gap-8">
+        <div>
+          <h2 class="text-3xl md:text-4xl font-bold mb-2">Eva — Sad Love Ballads</h2>
+          <p class="text-slate-300/90 max-w-2xl">Cinematic vocals, neo‑orchestral textures, and emotional storytelling. Stream the full catalog.</p>
+        </div>
+        <div class="flex gap-2 mt-4 md:mt-0">
+          <a class="btn glass rounded-xl px-4 py-2 text-sm" href="https://www.youtube.com" target="_blank" rel="noopener">YouTube</a>
+          <a class="btn glass rounded-xl px-4 py-2 text-sm" href="https://open.spotify.com" target="_blank" rel="noopener">Spotify</a>
+          <a class="btn glass rounded-xl px-4 py-2 text-sm" href="https://music.apple.com" target="_blank" rel="noopener">Apple Music</a>
+          <a class="btn glass rounded-xl px-4 py-2 text-sm" href="#" target="_blank" rel="noopener">HyperFollow</a>
+        </div>
+      </div>
 
-  let audioCtx, analyser, data;
-  let w=0,h=0,dpr=1, rafId=null;
+      <div class="mt-6 grid md:grid-cols-2 gap-6">
+        <div class="glass rounded-2xl p-4">
+          <div class="aspect-[16/9] rounded-lg overflow-hidden bg-black/50">
+            <!-- Replace with your video -->
+            <iframe class="w-full h-full" src="https://www.youtube.com/embed/Zi_XLOBDo_Y?rel=0" title="Eva — Official Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+          </div>
+          <div class="mt-3 flex items-center justify-between">
+            <span class="text-sm text-slate-300">New: “Goodbye in the Rain”</span>
+            <button id="useSiteAudio" class="text-sm text-blue-300 hover:text-blue-200">Use this as site audio</button>
+          </div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold">Site Audio Player</h3>
+              <p class="text-xs text-slate-400">Drop your MP3 in <code>/assets/eva-track.mp3</code> or pick an audio input.</p>
+            </div>
+            <div class="text-right">
+              <button id="micBtn" class="btn rounded-xl px-3 py-2 text-sm glass">Mic Input</button>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center gap-3">
+            <button id="toggle" class="btn rounded-xl px-4 py-2 bg-emerald-500/80 hover:bg-emerald-500 text-white text-sm">Play</button>
+            <input id="volume" type="range" min="0" max="1" step="0.01" value="0.8" class="w-full accent-blue-400" />
+            <span id="volLabel" class="text-xs w-10 text-right">80%</span>
+          </div>
+          <audio id="audio" src="assets/eva-track.mp3" crossorigin="anonymous"></audio>
+          <div class="mt-3 text-xs text-slate-400">Tip: browsers block autoplay—press <strong>Play</strong> above to start visualizer.</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  // sparkles
-  const particles = [];
-  const MAX = 480;
-  const TAU = Math.PI*2;
+  <section id="shorts" class="relative z-0 py-16">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-bold mb-6">Dog & Cat — Shorts</h2>
+      <p class="text-slate-300/90 max-w-3xl">Light‑hearted, fast, and fun. Pixar‑style realism meets quick storytelling.</p>
+      <div class="mt-6 grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <a class="glass rounded-2xl overflow-hidden group" href="#">
+          <div class="aspect-[9/16] bg-[url('https://images.unsplash.com/photo-1560807707-8cc77767d783?q=80&w=800&auto=format&fit=crop')] bg-cover bg-center"></div>
+          <div class="p-3 text-sm">Golden Retriever — “The Thief”</div>
+        </a>
+        <a class="glass rounded-2xl overflow-hidden group" href="#">
+          <div class="aspect-[9/16] bg-[url('https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?q=80&w=800&auto=format&fit=crop')] bg-cover bg-center"></div>
+          <div class="p-3 text-sm">Cat City Adventures</div>
+        </a>
+        <a class="glass rounded-2xl overflow-hidden group" href="#">
+          <div class="aspect-[9/16] bg-[url('https://images.unsplash.com/photo-1508672019048-805c876b67e2?q=80&w=800&auto=format&fit=crop')] bg-cover bg-center"></div>
+          <div class="p-3 text-sm">Street Smart Pup</div>
+        </a>
+      </div>
+    </div>
+  </section>
 
-  // floating music notes
-  const notes = [];
-  const NOTE_GLYPHS = ["♪","♫"];
-  function spawnNote(x = Math.random()*w){
-    notes.push({
-      x,
-      y: h + 30*dpr,
-      vx: (Math.random()-.5)*0.6*dpr,
-      vy: - (1.2 + Math.random()*1.6) * dpr,
-      rot: Math.random()*TAU,
-      vr: (Math.random()-.5)*0.01,
-      glyph: NOTE_GLYPHS[(Math.random()*NOTE_GLYPHS.length)|0],
-      life: 260 + Math.random()*160
+  <!-- CONTACT / FOOTER -->
+  <footer id="contact" class="relative z-0 py-14">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-3 gap-8 glass rounded-2xl p-6">
+        <div>
+          <h4 class="font-semibold text-lg">Get in Touch</h4>
+          <p class="mt-2 text-sm text-slate-300">For collaborations, licensing, or commissions.</p>
+          <a href="mailto:contact@madistudios.org" class="mt-3 inline-block text-blue-300 hover:text-blue-200 text-sm">contact@madistudios.org</a>
+        </div>
+        <div>
+          <h4 class="font-semibold text-lg">Follow</h4>
+          <ul class="mt-2 space-y-1 text-sm">
+            <li><a class="hover:text-slate-50" href="https://www.youtube.com" target="_blank" rel="noopener">YouTube</a></li>
+            <li><a class="hover:text-slate-50" href="https://open.spotify.com" target="_blank" rel="noopener">Spotify</a></li>
+            <li><a class="hover:text-slate-50" href="https://music.apple.com" target="_blank" rel="noopener">Apple Music</a></li>
+            <li><a class="hover:text-slate-50" href="https://x.com" target="_blank" rel="noopener">X / Twitter</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-lg">Newsletter</h4>
+          <form class="mt-2 flex gap-2" onsubmit="event.preventDefault(); alert('Thanks for subscribing!');">
+            <input type="email" required placeholder="your@email.com" class="w-full rounded-xl glass px-3 py-2 outline-none placeholder:text-slate-400">
+            <button class="btn rounded-xl px-4 py-2 bg-blue-500/80 hover:bg-blue-500 text-white">Join</button>
+          </form>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mt-6">© <span id="year"></span> Madi AI Studios. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- AUDIO‑REACTIVE BACKGROUND (Web Audio API + Canvas) -->
+  <script>
+    const canvas = document.getElementById('viz');
+    const ctx = canvas.getContext('2d');
+    let dpr = Math.max(1, window.devicePixelRatio || 1);
+    function resize(){
+      canvas.width = Math.floor(innerWidth * dpr);
+      canvas.height = Math.floor(innerHeight * dpr);
+    }
+    resize();
+    addEventListener('resize', resize);
+
+    // Particles (floating music notes + sparks)
+    const NOTE_CHARS = ['\u266A','\u266B','\u266C','\u2669'];
+    const particles = [];
+    function addParticle(x, y){
+      const size = 10 + Math.random()*30;
+      particles.push({ x, y, vx: (Math.random()-0.5)*0.6, vy: - (0.5+Math.random()*1.2), a: 0.9, size, life: 1, char: NOTE_CHARS[Math.floor(Math.random()*NOTE_CHARS.length)] });
+    }
+
+    // Audio setup
+    const audioEl = document.getElementById('audio');
+    const playBtn = document.getElementById('playBtn');
+    const toggleBtn = document.getElementById('toggle');
+    const volume = document.getElementById('volume');
+    const volLabel = document.getElementById('volLabel');
+    const micBtn = document.getElementById('micBtn');
+    const useSiteAudio = document.getElementById('useSiteAudio');
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    let audioCtx, analyser, srcNode, dataArray;
+
+    function setupAnalyser(streamNode){
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 1024; // smooth but responsive
+      const bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+      streamNode.connect(analyser);
+      analyser.connect(audioCtx.destination);
+    }
+
+    function connectElement(el){
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const track = audioCtx.createMediaElementSource(el);
+      setupAnalyser(track);
+    }
+
+    function startMic(){
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const mic = audioCtx.createMediaStreamSource(stream);
+        setupAnalyser(mic);
+      }).catch(() => alert('Microphone access denied.'));
+    }
+
+    // Buttons
+    playBtn.addEventListener('click', async ()=>{
+      try{ await audioEl.play(); }catch(e){}
+      if(!audioCtx) connectElement(audioEl);
+      if(audioCtx.state === 'suspended') await audioCtx.resume();
     });
-  }
+    toggleBtn.addEventListener('click', async ()=>{
+      if(audioEl.paused){
+        try{ await audioEl.play(); }catch(e){}
+        if(!audioCtx) connectElement(audioEl);
+      } else { audioEl.pause(); }
+      toggleBtn.textContent = audioEl.paused ? 'Play' : 'Pause';
+    });
+    volume.addEventListener('input', ()=>{ audioEl.volume = volume.value; volLabel.textContent = Math.round(volume.value*100)+'%'; });
+    micBtn.addEventListener('click', startMic);
+    useSiteAudio.addEventListener('click', async ()=>{
+      // Example: use the YouTube iframe audio is not directly capturable without extra APIs; keep site audio as the <audio> element.
+      alert('To use a specific song, drop your MP3 at /assets/eva-track.mp3 and press Play.');
+    });
 
-  function resize(){
-    dpr = Math.min(2, devicePixelRatio || 1);
-    w = canvas.width  = Math.floor(innerWidth  * dpr);
-    h = canvas.height = Math.floor(innerHeight * dpr);
-    canvas.style.width = innerWidth + 'px';
-    canvas.style.height= innerHeight + 'px';
-  }
-  addEventListener('resize', resize, {passive:true}); resize();
+    // Render loop
+    let t = 0;
+    function draw(){
+      requestAnimationFrame(draw);
+      // dynamic background bloom
+      t += 0.002;
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0,0,w,h);
+      const g = ctx.createLinearGradient(0,0,w,h);
+      g.addColorStop(0, 'rgba(96,165,250,0.08)');
+      g.addColorStop(0.5, 'rgba(244,114,182,0.06)');
+      g.addColorStop(1, 'rgba(16,185,129,0.07)');
+      ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
 
-  function seedParticles(){
-    particles.length = 0;
-    for(let i=0;i<MAX;i++){
-      particles.push({
-        x: Math.random()*w,
-        y: Math.random()*h,
-        z: Math.random(),
-        vx: (Math.random()-.5)*0.25,
-        vy: (Math.random()-.5)*0.25,
-        life: Math.random()*400+200,
-      });
-    }
-  }
-  seedParticles();
-
-  let t = 0;
-  function draw(){
-    rafId = requestAnimationFrame(draw);
-
-    // trail
-    ctx.fillStyle = 'rgba(5,8,20,0.2)';
-    ctx.fillRect(0,0,w,h);
-
-    // audio analysis or demo motion
-    let bass=0, mids=0;
-    if (analyser){
-      analyser.getByteFrequencyData(data);
-      for(let i=0;i<14;i++) bass += data[i]||0;  // bass bins
-      bass/= (14*255);
-      for(let i=20;i<120;i++) mids += data[i]||0; // mids
-      mids/= (100*255);
-    } else {
-      // DEMO mode: clearly visible motion (even before clicking Play)
-      bass = 0.25 + 0.18*Math.sin(t*0.9);
-      mids = 0.20 + 0.12*Math.cos(t*0.6);
-      // occasional demo notes
-      if (Math.random() < 0.06) spawnNote();
-    }
-
-    // wavy field lines
-    const rows = 6;
-    for(let r=0;r<rows;r++){
-      const y = h*(0.25 + r/(rows+2)) + Math.sin(t*0.9 + r)*50*dpr*bass;
-      ctx.beginPath();
-      for(let x=0;x<w;x+=10*dpr){
-        const y2 = y + Math.sin(x*0.004 + t + r)*22*dpr*mids;
-        r? ctx.lineTo(x,y2) : ctx.moveTo(x,y2);
+      let energy = 0.25; // default idle
+      if(analyser && dataArray){
+        analyser.getByteFrequencyData(dataArray);
+        // Focus on lows & mids for punchy response
+        let sum = 0; let count = 0;
+        for(let i=2;i<80;i++){ sum += dataArray[i]; count++; }
+        energy = (sum / (count*255)); // 0..1
       }
-      ctx.strokeStyle = `rgba(${60+Math.floor(40*bass)}, ${200+Math.floor(40*bass)}, 255, ${0.08 + 0.08*bass})`;
-      ctx.lineWidth = 1.4*dpr;
-      ctx.stroke();
-    }
 
-    // sparkles
-    const sparkle = 0.7 + bass*2.4;
-    for(const p of particles){
-      p.x += p.vx + (Math.sin(t*0.4 + p.y*0.002)-.5)*sparkle;
-      p.y += p.vy + (Math.cos(t*0.3 + p.x*0.002)-.5)*sparkle;
-      p.life -= 1;
+      // Spawn particles based on energy
+      const spawn = Math.floor(energy * 6);
+      for(let i=0;i<spawn;i++){
+        addParticle(Math.random()*w, h - Math.random()*h*0.2);
+      }
 
-      if(p.x<0) p.x+=w; if(p.x>w) p.x-=w;
-      if(p.y<0) p.y+=h; if(p.y>h) p.y-=h;
-      if(p.life<0){ p.x=Math.random()*w; p.y=Math.random()*h; p.life=Math.random()*400+200; }
-
-      const size = (0.7 + bass*3.0) * (p.z*2+0.6) * dpr;
-      const a = 0.35 + 0.55*Math.min(1,bass*1.8) * (1 - p.z*0.8);
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,size,0,TAU);
-      // some cool gold sparks
-      const warm = Math.random() < 0.12 ? `rgba(255,200,120,${a*0.9})` : `rgba(82,230,255,${a})`;
-      ctx.fillStyle = warm;
-      ctx.shadowBlur = 14*dpr;
-      ctx.shadowColor = 'rgba(80,200,255,0.8)';
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-
-    // music notes (spawn more on bass)
-    if (bass > 0.22 && Math.random() < 0.18) spawnNote();
-
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `${Math.max(16, w/42)}px "Segoe UI Symbol","Apple Color Emoji","Noto Emoji",system-ui,sans-serif`;
-    for (let i = notes.length - 1; i >= 0; i--) {
-      const n = notes[i];
-      n.x += Math.sin(t*0.8 + n.y*0.002)*0.8*dpr;
-      n.y += - (1.0 + bass*1.6) * dpr;
-      n.rot += (Math.random()-.5)*0.02;
-      n.life -= 1;
-
-      const glowAlpha = 0.28 + 0.6 * Math.min(1, bass*2);
+      // Draw floating aurora trails
       ctx.save();
-      ctx.translate(n.x, n.y);
-      ctx.rotate(n.rot);
-      ctx.shadowBlur = 24*dpr;
-      ctx.shadowColor = 'rgba(82,230,255,0.95)';
-      ctx.fillStyle = `rgba(120,220,255,${glowAlpha})`;
-      ctx.fillText(n.glyph, 0, 0);
+      ctx.globalCompositeOperation = 'lighter';
+      for(let i=0;i<3;i++){
+        const amp = (0.2 + energy*0.8) * (i+1);
+        ctx.beginPath();
+        for(let x=0;x<w;x+=20){
+          const y = h*0.3 + Math.sin(x*0.003 + t*2 + i)*40*amp + i*60;
+          if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.lineWidth = 2 + i*1.2;
+        const hue = [200, 320, 160][i];
+        ctx.strokeStyle = `hsla(${hue}, 90%, 60%, ${0.08 + energy*0.25})`;
+        ctx.stroke();
+      }
       ctx.restore();
 
-      if (n.life <= 0 || n.y < -80*dpr) notes.splice(i, 1);
-    }
-    ctx.restore();
-
-    t += 0.01 + bass*0.02;
-  }
-
-  // start renderer immediately so you see motion even before clicking Play
-  draw();
-
-  // audio bootstrapping
-  async function startAudio(){
-    try{
-      if(!audioCtx){
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const src = audioCtx.createMediaElementSource(audio);
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 2048;
-        data = new Uint8Array(analyser.frequencyBinCount);
-        const gain = audioCtx.createGain();
-        gain.gain.value = 1.0;
-        src.connect(analyser);
-        analyser.connect(gain);
-        gain.connect(audioCtx.destination);
+      // Update & draw particles (music notes)
+      for(let i=particles.length-1;i>=0;i--){
+        const p = particles[i];
+        p.x += p.vx * dpr * (1 + energy);
+        p.y += p.vy * dpr * (1 + energy*0.6);
+        p.life -= 0.006 + energy*0.01;
+        p.a *= 0.992;
+        if(p.life <= 0 || p.y < -50*dpr) { particles.splice(i,1); continue; }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.a * p.life);
+        ctx.font = (p.size*dpr) + 'px serif';
+        const hue = 200 + Math.sin((p.x+p.y+t*400)*0.002)*60;
+        ctx.fillStyle = `hsla(${hue}, 90%, 70%, ${0.8})`;
+        ctx.fillText(p.char, p.x, p.y);
+        ctx.restore();
       }
-      if (audioCtx.state === 'suspended') await audioCtx.resume();
-      await audio.play();
-      playBtn.textContent = "⏸ Pause";
-    }catch(e){
-      playBtn.textContent = "Play (tap to allow audio)";
+
+      // Subtle star field
+      const stars = 50;
+      ctx.save();
+      ctx.globalAlpha = 0.08 + energy*0.05;
+      for(let i=0;i<stars;i++){
+        const x = ((i*97)%w);
+        const y = ((i*233 + Math.sin(t*2+i)*100)%h);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(x, y, 2, 2);
+      }
+      ctx.restore();
     }
-  }
-
-  playBtn.addEventListener('click', async () => {
-    if (audio.paused) { await startAudio(); }
-    else { audio.pause(); playBtn.textContent = "▶ Play"; }
-  });
-
-  muteBtn.addEventListener('click', () => {
-    audio.muted = !audio.muted;
-    muteBtn.textContent = audio.muted ? "🔊 Unmute" : "🔇 Mute";
-  });
-})();
-</script>
+    draw();
+  </script>
 </body>
 </html>
